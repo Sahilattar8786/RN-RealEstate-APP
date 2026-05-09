@@ -1,10 +1,10 @@
 import React from 'react'
-import { Text, View } from 'react-native'
+import { SafeAreaView, Text } from 'react-native'
 
 export default function profile() {
   return (
-    <View>
+    <SafeAreaView>
       <Text>profile</Text>
-    </View>
+    </SafeAreaView>
   )
 }
