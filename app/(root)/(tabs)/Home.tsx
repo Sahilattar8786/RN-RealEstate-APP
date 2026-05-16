@@ -1,23 +1,38 @@
-import FeatureCard from '@/component/featureCard';
-import PropertyCard from '@/component/PropertyCard';
-import { supabase } from '@/lib/superbase';
-import { Property } from '@/types';
-import { useAuth, useUser } from '@clerk/expo';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
-export default function Home() {
-  const { signOut } = useAuth();
+import FeaturedCard from "@/component/featureCard";
+import PropertyCard from "@/component/PropertyCard";
+import { supabase } from "@/lib/superbase";
+import { Property } from "@/types";
+import { useUser } from "@clerk/expo";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+export default function HomeScreen() {
   const { user } = useUser();
   const router = useRouter();
 
-  const [featuredListings, setFeaturedListings] = useState<Property[]>([]);
-  const [recommendedListings, setRecommendedListings] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [featured, setFeatured] = useState<Property[]>([]);
+  const [recommended, setRecommended] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProperties();
+    }, [])
+  );
 
   const fetchProperties = async () => {
     setLoading(true);
+
     const { data: featuredData } = await supabase
       .from("properties")
       .select("*")
@@ -30,107 +45,104 @@ export default function Home() {
       .eq("is_featured", false)
       .order("created_at", { ascending: false });
 
-    setFeaturedListings(featuredData || []);
-    setRecommendedListings(recommendedData || []);
+    setFeatured(featuredData ?? []);
+    setRecommended(recommendedData ?? []);
     setLoading(false);
-  }
-  useFocusEffect(
-    useCallback(() => {
-      fetchProperties()
-    }, [])
-  )
+  };
+
   return (
-    <SafeAreaView className='flex-1 bg-gray-50'>
-      {
-        loading ? (
-          <View className="items-center flex-1 py-10">
-            <ActivityIndicator size="large" color="blue" />
-          </View>
-        ) : (
-          <FlatList
-          data={recommendedListings}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={() => {
-            return (
-              <HeaderComponent firstName={user?.firstName} loading={loading} data={featuredListings} />
-            )
-          }}
-          renderItem={({ item }) => {
-            return (
-              <PropertyCard property={item} />
-            )
-          }}
-          ListEmptyComponent={() => {
-            return (
-              <View className="items-center flex-1 py-10">
-                <Text className="text-gray-500">No listings found</Text>
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <FlatList
+        data={recommended}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View>
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-5 pt-4 pb-5">
+              <Image
+                source={require("../../../assets/images/kribb.png")}
+                style={{ width: 90, height: 36 }}
+                resizeMode="contain"
+              />
+              <View className="items-end">
+                <Text className="text-gray-500 text-xs">Good morning 👋</Text>
+                <Text className="text-gray-900 text-base font-bold">
+                  {user?.firstName ?? "User"}
+                </Text>
               </View>
-            )
-          }}
-        />
-        )
-      }
-     
-    </SafeAreaView>
-  )
-}
+            </View>
 
-const HeaderComponent = ({ firstName , loading , data }: { firstName?: string | null, loading?: boolean, data?: Property[] }) => {
-  return (
-    <View>
-      <View className='flex-row items-center justify-between px-5 pt-4 pb-5'>
-        <Image
-          source={require('@/assets/images/kribb.png')}
-          style={{ width: 90, height: 45 }}
-        />
-        <View className="items-end">
-          <Text className="text-lg font-bold">Welcome Back,</Text>
-          <Text className="text-gray-500">Hello, {firstName ?? "User"}</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={() => router.push("/search")}
-        className="mx-5 mb-6 flex-row items-center justify-between bg-white rounded-2xl px-4 py-3 gap-3"
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.06,
-          shadowRadius: 6,
-          elevation: 2,
-        }}
-      >
-        <Text className="text-gray-500">Search for a property</Text>
-        <TouchableOpacity
-         onPress={() => router.push("/search?openFilters=true")}
-         className="w-8 h-8 bg-blue-600 rounded-xl items-center justify-center"
-         >
-          <Ionicons name="search" size={24} color="blue" />
-        </TouchableOpacity>
-      </TouchableOpacity>
-      <Text className="text-gray-500 px-5 font-bold mb-5">Recommended</Text>
-      <View className="mb-6">
-     
-      {
-        loading ? (
-          <View className="items-center flex-1 py-10">
-            <ActivityIndicator size="large" color="blue" />
+            {/* Search Bar */}
+            <TouchableOpacity
+              onPress={() => router.push("/(root)/(tabs)/search")}
+              className="mx-5 mb-6 flex-row items-center bg-white rounded-2xl px-4 py-3 gap-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+            >
+              <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+              <Text className="text-gray-400 text-sm flex-1">
+                Search properties, cities...
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push("/(root)/(tabs)/search?openFilters=true")
+                }
+                className="w-8 h-8 bg-blue-600 rounded-xl items-center justify-center"
+              >
+                <Ionicons name="options-outline" size={15} color="white" />
+              </TouchableOpacity>
+            </TouchableOpacity>
+
+            {/* Featured Section */}
+            <View className="mb-6">
+              <Text className="text-gray-900 text-lg font-bold px-5 mb-4">
+                Featured
+              </Text>
+
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#2563EB"
+                  className="py-10"
+                />
+              ) : (
+                <FlatList
+                  data={featured}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => <FeaturedCard property={item} />}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 20 }}
+                />
+              )}
+            </View>
+
+            {/* Recommended Header */}
+            <Text className="text-gray-900 text-lg font-bold px-5 mb-4">
+              Recommended
+            </Text>
           </View>
-        ) : (
-          <FlatList
-            data={data}
-           keyExtractor={(item) => item.id}
-           renderItem={({ item }) => <FeatureCard property={item} />}
-           horizontal
-           showsHorizontalScrollIndicator={false}
-           contentContainerStyle={{ paddingHorizontal: 20 }}
-        />
-        )
-      }
-      </View>
-    
-
-    </View>
-  )
+        }
+        renderItem={({ item }) => (
+          <View className="px-5">
+            <PropertyCard property={item} />
+          </View>
+        )}
+        ListEmptyComponent={
+          !loading ? (
+            <View className="items-center py-10">
+              <Text className="text-gray-400">No properties found</Text>
+            </View>
+          ) : null
+        }
+      />
+    </SafeAreaView>
+  );
 }
